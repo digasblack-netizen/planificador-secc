@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Planificador SECC · Estudiantes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: barra lateral con casos y pasos del método (Lab 1 → Lab 2) + panel de trabajo; en móvil, pasos como cinta horizontal. */
+:root{
+  --bg:#F3F6F5; --surface:#FFFFFF; --sunk:#E8EEEC; --line:#D3DDDA; --ink:#13302C; --muted:#5A6F6B;
+  --accent:#0E6E62; --accent-ink:#FFFFFF; --accent-soft:#DCEFEA;
+  --seg:#B3412E; --seg-soft:#F6E2DD; --efi:#B07A12; --efi-soft:#F5EBD3; --com:#2F5FA8; --com-soft:#E0E8F5; --con:#7A4AA0; --con-soft:#ECE3F3;
+  --err:#B42318; --err-soft:#FCE8E6; --warn:#8A5A00; --warn-soft:#FDF1D8; --ok:#1E7A46; --ok-soft:#E1F3E8;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1A19; --surface:#152321; --sunk:#1B2C29; --line:#2A3F3B; --ink:#E4EEEB; --muted:#94AAA5;
+  --accent:#4FC3AE; --accent-ink:#06211C; --accent-soft:#183B35;
+  --seg:#F08A74; --seg-soft:#3A221D; --efi:#E3B252; --efi-soft:#352B16; --com:#8CB2F0; --com-soft:#1D2A40; --con:#C69BE6; --con-soft:#2C2236;
+  --err:#FF8A80; --err-soft:#3A1E1C; --warn:#F2C25B; --warn-soft:#33290F; --ok:#6FD39A; --ok-soft:#163223; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1A19; --surface:#152321; --sunk:#1B2C29; --line:#2A3F3B; --ink:#E4EEEB; --muted:#94AAA5;
+  --accent:#4FC3AE; --accent-ink:#06211C; --accent-soft:#183B35;
+  --seg:#F08A74; --seg-soft:#3A221D; --efi:#E3B252; --efi-soft:#352B16; --com:#8CB2F0; --com-soft:#1D2A40; --con:#C69BE6; --con-soft:#2C2236;
+  --err:#FF8A80; --err-soft:#3A1E1C; --warn:#F2C25B; --warn-soft:#33290F; --ok:#6FD39A; --ok-soft:#163223; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+.wrap{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh}
+aside{background:var(--surface);border-right:1px solid var(--line);padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow:auto}
+main{min-width:0;padding-block:24px 64px;padding-left:max(16px,4vw);padding-right:max(16px,env(safe-area-inset-right,0px),4vw)}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.1;margin:0;letter-spacing:-.01em}
+.brand small{color:var(--muted);font-size:12px}
+.secc-mark{display:flex;gap:4px;margin-top:8px}
+.secc-mark span{font-family:var(--f-mono);font-size:11px;width:22px;height:22px;display:grid;place-items:center;border-radius:5px;font-weight:500}
+.d-Seg{background:var(--seg-soft);color:var(--seg)} .d-Efi{background:var(--efi-soft);color:var(--efi)} .d-Com{background:var(--com-soft);color:var(--com)} .d-Con{background:var(--con-soft);color:var(--con)}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.cases{display:flex;flex-direction:column;gap:4px}
+.case-btn{all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;display:flex;flex-direction:column;gap:1px}
+.case-btn:hover{background:var(--sunk)}
+.case-btn[aria-current="true"]{background:var(--accent-soft)}
+.case-btn b{font-weight:600;font-size:14px}
+.case-btn span{font-size:12px;color:var(--muted)}
+.case-btn:focus-visible,.step-btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.steps{display:flex;flex-direction:column;gap:2px;counter-reset:s}
+.step-btn{all:unset;cursor:pointer;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:14px}
+.step-btn:hover{background:var(--sunk)}
+.step-btn[aria-current="step"]{background:var(--ink);color:var(--bg)}
+.step-btn .n{font-family:var(--f-mono);font-size:12px;opacity:.7}
+.dot{min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:11px;font-weight:700;display:grid;place-items:center}
+.dot.err{background:var(--err-soft);color:var(--err)} .dot.warn{background:var(--warn-soft);color:var(--warn)} .dot.ok{background:var(--ok-soft);color:var(--ok)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)}
+.mode{display:flex;background:var(--sunk);border-radius:8px;padding:3px;gap:3px}
+.mode button{all:unset;cursor:pointer;flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.mode button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.cloud{color:var(--ok);background:var(--ok-soft)}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:20px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h2{font-family:var(--f-display);font-weight:600;font-size:clamp(26px,3.2vw,34px);line-height:1.1;margin:4px 0 0;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
+.tag-ej{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--warn-soft);color:var(--warn);padding:3px 8px;border-radius:6px}
+.grid{display:grid;gap:16px}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h3{font-family:var(--f-display);font-size:20px;font-weight:600;margin:0}
+.panel .hint{font-size:13px;color:var(--muted);margin:-8px 0 0}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.field .lab{font-size:13px;font-weight:600}
+.field .src{font-size:11px;color:var(--muted);font-weight:400}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:76px;resize:vertical}
+input[type=number]{font-variant-numeric:tabular-nums}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex:none;margin:2px 0 0}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:8px;font-weight:600;font-size:14px;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{background:transparent;color:var(--err);border:1px solid var(--line)}
+.btn:hover{filter:brightness(1.06)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sentence{font-family:var(--f-display);font-size:18px;line-height:1.45;padding:12px 14px;background:var(--accent-soft);border-radius:8px;min-height:48px}
+.sentence.empty{font-family:var(--f-body);font-size:13px;color:var(--muted);background:var(--sunk)}
+.sentence mark{background:var(--warn-soft);color:var(--warn);border-radius:3px;padding:0 2px}
+.alerts{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.alerts li{font-size:13px;padding:7px 10px;border-radius:7px;display:flex;gap:8px;align-items:flex-start}
+.alerts li::before{font-weight:800;flex:none}
+.alerts li.err{background:var(--err-soft);color:var(--err)} .alerts li.err::before{content:"Falta"}
+.alerts li.warn{background:var(--warn-soft);color:var(--warn)} .alerts li.warn::before{content:"Revisar"}
+.alerts li.ok{background:var(--ok-soft);color:var(--ok)} .alerts li.ok::before{content:"✓"}
+.alerts li span{color:var(--ink)}
+.dim-group{display:flex;flex-direction:column;gap:6px}
+.dim-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.chip{font-family:var(--f-mono);font-size:11px;font-weight:500;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.check{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.check:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.check .t{font-size:14px;font-weight:500}
+.check .s{font-size:11px;color:var(--muted)}
+.check .more{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:4px}
+.content-card{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);display:grid;grid-template-columns:6px 1fr;overflow:hidden}
+.content-card .stripe{background:var(--line)}
+.content-card .stripe.Seg{background:var(--seg)} .content-card .stripe.Efi{background:var(--efi)} .content-card .stripe.Com{background:var(--com)} .content-card .stripe.Con{background:var(--con)}
+.content-card .body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.cc-title{font-weight:700;font-size:15px}
+.prio{font-family:var(--f-mono);font-size:12px;font-weight:500;background:var(--ink);color:var(--bg);border-radius:6px;padding:2px 8px}
+.meta{font-size:12px;color:var(--muted)}
+.cc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.obj{border-top:1px dashed var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.obj-label{display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.obj-label .id{font-family:var(--f-mono);color:var(--accent);text-transform:none;letter-spacing:0}
+.oo{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.oo-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.oo-grid .w2{grid-column:span 2} .oo-grid .w3{grid-column:span 3} .oo-grid .w6{grid-column:span 6}
+.smart{display:flex;gap:4px}
+.smart span{font-family:var(--f-mono);font-size:11px;width:22px;height:22px;border-radius:5px;display:grid;place-items:center;background:var(--sunk);color:var(--muted)}
+.smart span.y{background:var(--ok-soft);color:var(--ok)} .smart span.n{background:var(--err-soft);color:var(--err)}
+.toggle-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.tcard{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.tcard.on{border-color:var(--accent);background:var(--accent-soft)}
+.tcard .tt{display:flex;gap:8px;align-items:flex-start;font-weight:700}
+.tcard p{margin:0;font-size:12.5px;color:var(--muted)}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;gap:18px}
+.plan h3{font-family:var(--f-display);font-size:22px;margin:0}
+.plan h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.plan p{margin:0;max-width:75ch}
+.plan ol,.plan ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.plan .oe-line{font-weight:600}
+.plan .oo-line{color:var(--ink);font-size:14px}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:28px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:12px;align-items:center}
+.nav-foot{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;font-size:14px;z-index:20}
+.confirm{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--err)}
+.loading{display:grid;place-items:center;min-height:60vh;color:var(--muted)}
+@media (max-width: 960px){
+  .wrap{grid-template-columns:minmax(0,1fr)}
+  aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .steps{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+  .step-btn{grid-template-columns:auto auto auto;white-space:nowrap}
+  .cases{flex-direction:row;overflow-x:auto}
+  .case-btn{white-space:nowrap}
+  .side-foot{margin-top:0} .brand small,.secc-mark,.side-foot>span:last-child{display:none} aside{gap:12px;padding-block:14px}
+  .cols-2,.cols-3{grid-template-columns:minmax(0,1fr)}
+  .cc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .oo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .oo-grid .w2,.oo-grid .w3,.oo-grid .w6{grid-column:span 2}
+  .check .more{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <aside>
+    <div class="brand">
+      <h1>Planificador SECC</h1>
+      <small>Planes de intervención en deglución · AFON101</small>
+      <div class="secc-mark" aria-hidden="true"><span class="d-Seg">S</span><span class="d-Efi">E</span><span class="d-Com">C</span><span class="d-Con">C</span></div>
+    </div>
+    <div class="grid" style="gap:8px">
+      <div class="row" style="justify-content:space-between"><span class="label">Casos</span><button class="btn small ghost" id="new-case" type="button">+ Nuevo caso</button></div>
+      <div class="cases" id="cases"></div>
+    </div>
+    <div class="grid" style="gap:8px">
+      <span class="label">Método</span>
+      <nav class="steps" id="steps" aria-label="Pasos"></nav>
+    </div>
+    <div class="side-foot">
+      <div id="mode-wrap" hidden>
+        <span class="label">Vista</span>
+        <div class="mode" role="group" aria-label="Modo">
+          <button type="button" id="m-doc" aria-pressed="true">Docente</button>
+          <button type="button" id="m-stu" aria-pressed="false">Estudiante</button>
+        </div>
+      </div>
+      <span class="pill" id="store-pill">Guardado en este navegador</span><span>Los casos quedan solo en este navegador: use Exportar caso para respaldarlos o moverlos a otro equipo.</span>
+      <span>Use alias o casos de clase. No ingrese datos que identifiquen a pacientes reales.</span>
+    </div>
+  </aside>
+  <main id="main"><div class="loading">Cargando casos…</div></main>
+</div>
+<input type="file" id="import-file" accept=".json,application/json" hidden>
+
+<script>
+"use strict";
+/* ============================== CATÁLOGOS (trazables a Clase 2, Lab 1 y Lab 2) ============================== */
+const DIMS = {Seg:{name:"Seguridad",prio:1,q:"¿El bolo invade la vía aérea?"},Efi:{name:"Eficiencia",prio:2,q:"¿El bolo se transporta completo y a tiempo?"},Com:{name:"Competencia",prio:3,q:"¿Hay capacidad sensoriomotora para ejecutar?"},Con:{name:"Confortabilidad",prio:"T",q:"¿La experiencia es tolerable y significativa?"}};
+const DIM_KEYS = ["Seg","Efi","Com","Con"];
+const SIMPSON = {
+  "1":{n:"Percepción",v:["discriminará","diferenciará","identificará","detectará","seleccionará"]},
+  "2":{n:"Disposición (apresto)",v:["se posicionará","ajustará","adoptará","preparará","iniciará"]},
+  "3":{n:"Respuesta guiada (o dirigida)",v:["imitará","ejecutará","demostrará","seguirá","reproducirá"]},
+  "4":{n:"Mecanismo",v:["coordinará","automatizará","secuenciará","usará","desencadenará"]},
+  "5":{n:"Respuesta compleja abierta",v:["producirá","secuenciará","ejecutará con destreza"]},
+  "6":{n:"Adaptación",v:["adaptará","modificará","ajustará","variará"]},
+  "7":{n:"Creación",v:["creará","combinará","diseñará"]},
+  "F":{n:"Otros observables",v:["mantendrá","desencadenará","consumirá","aceptará","completará","aplicará"]}
+};
+const OG_VERBS = ["desarrollará","incrementará","mejorará","mantendrá","prevendrá","eliminará","logrará","optimizará"];
+const OE_VERBS = ["coordinará","mantendrá","desencadenará","adoptará","ejecutará","adaptará","aumentará","consumirá","aceptará","aplicará","identificará"];
+const FUENTES = ["Evaluación clínica de la deglución","MECV-V","VFSS / VFC","FEES","Escala de residuo Yale","EAT-10 (autopercepción)","Pedi-EAT (percepción del cuidador)","FOIS","DOSS","Observación de la comida","Entrevista usuario / familia","Escala visual de agrado"];
+const CRITERIOS = [
+  {n:"Por nivel de intervención",d:"Promoción, prevención o tratamiento según el momento del proceso salud–enfermedad."},
+  {n:"Evolutivo",d:"Etapa del ciclo vital: características anatómicas, funcionales y madurativas."},
+  {n:"Clínico-funcional",d:"Impacto en seguridad, eficacia y funcionalidad: prevenir aspiración, nutrir, hidratar, autonomía."},
+  {n:"Aplicabilidad clínica",d:"Lo factible, accesible y sostenible en el contexto real."},
+  {n:"Sintomatológico",d:"El síntoma más peligroso o limitante. Subcategoría del clínico-funcional."},
+  {n:"De precedencia causal",d:"Primero la causa, luego la consecuencia: habilidades que anteceden a otras."}
+];
+const MODELOS = [
+  {n:"Biopsicosocial",d:"Integra lo biológico, psicológico y social. Marco CIF; atención centrada en la persona.",p:"Participación activa, contextual y significativa."},
+  {n:"Biomédico",d:"Centrado en el diagnóstico y tratamiento del déficit fisiológico.",p:"Participación limitada o pasiva."},
+  {n:"Clínico-directivo",d:"El terapeuta dirige la sesión y selecciona las actividades.",p:"Participación guiada."},
+  {n:"Centrado en niño/familia",d:"Intereses, prioridades y contexto del usuario.",p:"Participación protagónica y contextualizada."},
+  {n:"Híbrido",d:"Control clínico con iniciativa y autonomía del usuario.",p:"Participación variable, funcionalidad creciente."},
+  {n:"Rehabilitador",d:"Recuperar o desarrollar funciones mediante estimulación dirigida.",p:"Desarrollo de habilidades funcionales."},
+  {n:"Compensatorio",d:"Estrategias o adaptaciones sin modificar la causa.",p:"Participación funcional y protegida."}
+];
+const ETAPAS = [
+  ["anamnesis","Anamnesis","Antecedentes, fármacos, dieta previa, peso, neumonías, percepción del usuario y la familia."],
+  ["obs","Observación clínica","Alerta, control postural, cognición, manejo de secreciones, estado respiratorio."],
+  ["oro","Examen orofacial","Control motor y sensibilidad orofacial, reflejos, función laríngea."],
+  ["deg","Proceso deglutorio","Por consistencia y volumen; en lactantes, succión y coordinación S-D-R."],
+  ["instr","Evaluación instrumental","VFC o FEES: penetración/aspiración; permite asignar DOSS."],
+  ["equipo","Trabajo en equipo","Nutricionista, médico tratante, kinesiología."]
+];
+const VIAS = ["Oral sin restricciones","Oral con modificaciones (viscosidad, volumen, estrategias)","Oral con modificaciones + SNG transitoria","Mixta (oral + SNG)","Mixta (oral + GTT)","Enteral exclusiva por SNG","Enteral exclusiva por GTT"];
+const SEVS = ["leve","leve a moderada","moderada","moderada a severa","severa"];
+const DOSS_LBL = ["severa","moderada a severa","moderada","leve a moderada","leve","dentro de límites funcionales","normal"];
+const CICLOS = ["Recién nacido / lactante","Preescolar","Escolar","Adolescente","Adulto","Persona mayor"];
+
+/* Contenidos: dimensión por naturaleza; prioridad y criterio sugeridos; plantillas de objetivos.
+   "src" indica de dónde sale cada plantilla. Lo marcado "Propuesta" no está en los materiales: validar.
+   Corchetes [ ] = dato que debe definir el clínico; no se inventan valores. */
+const C = {
+  postura:{name:"Postura de protección (flexión cervical)",dim:"Seg",tipo:"Compensatorio",crit:"Clínico-funcional"},
+  visc:{name:"Volumen y viscosidad del bolo (IDDSI)",dim:"Seg",tipo:"Compensatorio",crit:"Clínico-funcional"},
+  higiene:{name:"Higiene oral y riesgo de neumonía",dim:"Seg",tipo:"Compensatorio",crit:"Clínico-funcional",sujeto:"cuidador"},
+  secre:{name:"Manejo de secreciones (sialorrea / deglución de saliva)",dim:"Seg",tipo:"Rehabilitador",prio:3,crit:""},
+  postural:{name:"Estabilidad postural durante la alimentación",dim:"Seg",tipo:"Compensatorio",prio:2,crit:"De precedencia causal"},
+  rmo:{name:"Desencadenamiento oportuno de la RMO",dim:"Com",tipo:"Rehabilitador",prio:1,crit:"Clínico-funcional"},
+  laringe:{name:"Función laríngea: cierre glótico y tos protectora",dim:"Com",tipo:"Rehabilitador",prio:1,crit:"Clínico-funcional"},
+  sdr:{name:"Coordinación succión–deglución–respiración (S-D-R)",dim:"Com",tipo:"Rehabilitador",prio:1,crit:"Sintomatológico"},
+  sellado:{name:"Control motor oral: sellado labial",dim:"Com",tipo:"Rehabilitador",prio:1,crit:"Clínico-funcional"},
+  hioideo:{name:"Fortalecimiento suprahioideo / elevación hiolaríngea",dim:"Com",tipo:"Rehabilitador",prio:2,crit:"Clínico-funcional"},
+  sens:{name:"Sensibilidad orofaríngea",dim:"Com",tipo:"Rehabilitador",crit:""},
+  residuo:{name:"Tránsito y aclaramiento faríngeo (deglución de esfuerzo, doble trago)",dim:"Efi",tipo:"Compensatorio",prio:2,crit:"Clínico-funcional"},
+  tiempo:{name:"Tiempo de alimentación y contexto alimentario",dim:"Efi",tipo:"Compensatorio",prio:3,crit:""},
+  nutri:{name:"Aporte nutricional e hídrico",dim:"Efi",tipo:"Compensatorio",crit:""},
+  trans:{name:"Transición a vía oral (texturas IDDSI progresivas)",dim:"Efi",tipo:"Compensatorio",prio:3,crit:""},
+  acept:{name:"Aceptación de texturas modificadas",dim:"Con",tipo:"Compensatorio",crit:""},
+  regul:{name:"Regulación conductual y sensorial",dim:"Con",tipo:"Rehabilitador",crit:""},
+  partic:{name:"Contexto alimentario y participación familiar",dim:"Con",tipo:"Compensatorio",prio:3,crit:""},
+  cuidador:{name:"Educación y coaching a cuidadores",dim:"Con",tipo:"Compensatorio",crit:"",sujeto:"cuidador"},
+};
+
+const H = [
+  {id:"tos_liq",t:"Tos o cambio de voz con líquido fino",dim:"Seg",c:["postura","visc"],src:"Clase 2, diap. 39"},
+  {id:"rmo",t:"Caída prematura o retraso del desencadenamiento de la RMO con líquido en mayor volumen",dim:"Seg",c:["rmo","visc"],src:"Lab 1 y 2"},
+  {id:"hipofonia",t:"Hipofonía o voz débil (posible compromiso laríngeo)",dim:"Seg",c:["laringe"],src:"Lab 1 y 2"},
+  {id:"tos_succ",t:"Tos durante la succión",dim:"Seg",c:["sdr"],lact:true,src:"Lab 2"},
+  {id:"higiene",t:"Higiene oral deficiente o uso de vía enteral",dim:"Seg",c:["higiene"],src:"Clase 2, diap. 21 y 49; Lab 1"},
+  {id:"babeo",t:"Sialorrea o babeo posalimentación",dim:"Seg",c:["secre"],src:"Lab 1 y 2"},
+  {id:"residuo",t:"Residuo vallecular o faríngeo",dim:"Efi",c:["residuo"],src:"Clase 2, diap. 39; Lab 1"},
+  {id:"fracc",t:"Tragos fraccionados",dim:"Efi",c:["residuo","hioideo"],src:"Lab 1 y 2"},
+  {id:"fatiga",t:"Fatiga precoz o tiempos de alimentación prolongados (> 30 min)",dim:"Efi",c:["tiempo"],src:"Lab 1 y 2"},
+  {id:"peso",t:"Bajo peso o ingesta insuficiente",dim:"Efi",c:["nutri"],src:"Lab 1"},
+  {id:"sng",t:"Dependencia de sonda con vía oral habilitada",dim:"Efi",c:["trans"],src:"Lab 2"},
+  {id:"labial",t:"Cierre labial insuficiente",dim:"Com",c:["sellado"],src:"Lab 1 y 2; Clase 2, diap. 42"},
+  {id:"hioideo",t:"Elevación hiolaríngea reducida",dim:"Com",c:["hioideo"],src:"Clase 2, diap. 39; Lab 1"},
+  {id:"hipotonia",t:"Hipotonía global o control postural deficiente",dim:"Com",c:["postural"],src:"Lab 1 y 2"},
+  {id:"succion",t:"Succión débil sin patrón rítmico",dim:"Com",c:["sdr"],lact:true,src:"Lab 1 y 2"},
+  {id:"sens",t:"Hiper o hiporrespuesta sensorial intraoral",dim:"Com",c:["sens"],src:"Lab 2"},
+  {id:"rechazo",t:"Rechazo de líquidos espesados o texturas modificadas",dim:"Con",c:["acept"],src:"Clase 2, diap. 39"},
+  {id:"aversion",t:"Aversión, ansiedad o rechazo de nuevas texturas",dim:"Con",c:["regul"],src:"Clase 2, diap. 20 y 38"},
+  {id:"partic",t:"Restricción en la participación en comidas familiares o sociales",dim:"Con",c:["partic"],src:"Lab 1 y 2"},
+  {id:"carga",t:"Carga del cuidador o dificultad para aplicar estrategias en casa",dim:"Con",c:["cuidador"],src:"Clase 2, diap. 19 y 20"}
+];
+const HMAP = Object.fromEntries(H.map(h=>[h.id,h]));
+
+const STEPS = [
+  {id:"caso",n:"1",t:"Caso",lab:"Datos del usuario"},
+  {id:"hip",n:"2",t:"Hipótesis y vía",lab:"Laboratorio 1"},
+  {id:"hall",n:"3",t:"Hallazgos",lab:"Lab 2 · paso 3"},
+  {id:"mod",n:"4",t:"Modelos y criterios",lab:"Lab 2 · pasos 1–2"},
+  {id:"cont",n:"5",t:"Contenidos",lab:"Lab 2 · pasos 3–6"},
+  {id:"obj",n:"6",t:"Objetivos",lab:"Lab 2 · paso 7"},
+  {id:"plan",n:"7",t:"Plan",lab:"Resumen"}
+];
+
+/* ============================== ESTADO ============================== */
+const S = {cases:[], cur:null, step:"caso", mode:"stu", owner:false, store:"local", db:null, uid:null, confirmDel:false};
+const LSKEY = "planificadorSECC.v1";
+const uid8 = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const cur = () => S.cases.find(c=>c.id===S.cur);
+
+function blankCase(nombre){
+  return {id:uid8(), nombre:nombre||"Caso nuevo", ejemplo:false, actualizado:Date.now(),
+    datos:{edad:"",ciclo:"",condicion:"",curso:"",escenario:"",viaActual:"",cuidador:""},
+    eval:Object.fromEntries(ETAPAS.map(e=>[e[0],{estado:"",nota:""}])),
+    hip:{etio:"",loc:"",sev:"",doss:"",fois:"",seg:"",efi:"",cond:"",lim:"",par:""},
+    via:{via:"",jseg:"",jefi:"",jpro:"",jtem:"",tsem:"",reev:""},
+    hall:{}, hallOtros:[],
+    modelos:Object.fromEntries(MODELOS.map(m=>[m.n,{uso:false,rol:"",just:""}])),
+    criterios:Object.fromEntries(CRITERIOS.map(c=>[c.n,{uso:false,orden:"",just:""}])),
+    ejes:{func:"",relev:"",ctx:"",cif:""},
+    enfoque:"", modalidad:"",
+    contenidos:[],
+    og:{verbo:"",contenido:"",contexto:"",n:"",unidad:"sesiones",texto:"",verboUsado:""}};
+}
+function isLact(cs){ return (cs.datos.ciclo||"").startsWith("Recién"); }
+function tmplFor(cid, cs){ const t=C[cid]; return (t.alt && !isLact(cs)) ? {...t, oe:t.alt.oe, oos:t.alt.oos} : t; }
+function newOO(src){ return Object.assign({nivel:"",verbo:"",conducta:"",condicion:"",ct:"xy",v1:"",v2:"",unidad:"",libre:"",n:"",unidadPlazo:"sesiones",A:"",R:"",texto:"",verboUsado:"",src:""}, src?clone(src):{}); }
+function newContenido(cid, cs, fromH){
+  const t = tmplFor(cid, cs);
+  return {key:uid8(), cid, name:t.name, dim:t.dim, hall:fromH||[], prio:String(t.prio ?? DIMS[t.dim].prio), crit:t.crit||"", tipo:t.tipo||"", objetivo:true,
+    oe:Object.assign({sujeto:t.sujeto==="cuidador"?"Cuidador":"Usuario",verbo:"",habilidad:"",contexto:"",n:"",unidad:"sesiones",texto:"",verboUsado:"",src:""}, S.mode==="doc"?clone(t.oe):{}),
+    oos:S.mode==="doc" ? t.oos.map(o=>newOO(o)) : [newOO()]};
+}
+
+function exampleMarcelo(){ return blankCase("Caso de práctica"); }
+
+/* ============================== PERSISTENCIA ============================== */
+let saveTimer = null; const dirty = new Set();
+function touch(){ const c=cur(); if(!c) return; c.actualizado=Date.now(); dirty.add(c.id); clearTimeout(saveTimer); saveTimer=setTimeout(flush,900); }
+async function flush(){
+  const ids=[...dirty]; dirty.clear();
+  saveLocal();
+  if(S.store!=="cloud") return;
+  for(const id of ids){
+    const c=S.cases.find(x=>x.id===id); if(!c) continue;
+    try{ await S.db.collection("data/users/"+S.uid).doc(c.id).set(clone(c)); }
+    catch(e){ if(e && (e.code==="invalid_argument"||e.code==="not_granted"||e.code==="revoked")){ S.store="local"; renderPill(); toast("No se pudo guardar en tu cuenta: los casos quedan en este navegador."); } }
+  }
+}
+function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify(S.cases)); }catch(e){} }
+function loadLocal(){ try{ const v=JSON.parse(localStorage.getItem(LSKEY)||"[]"); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+async function removeCase(id){
+  S.cases = S.cases.filter(c=>c.id!==id); saveLocal();
+  if(S.store==="cloud"){ try{ await S.db.collection("data/users/"+S.uid).doc(id).delete(); }catch(e){} }
+  S.cur = S.cases[0]?.id || null;
+}
+async function init(){
+  S.owner = false; S.mode = S.owner ? "doc" : "stu"; S.store = "local";
+  let cases = loadLocal();
+  if(!cases.length && S.owner){ cases=[exampleMarcelo()]; }
+  S.cases = cases.sort((a,b)=>(b.actualizado||0)-(a.actualizado||0)); saveLocal();
+  S.cur = S.cases[0]?.id || null;
+  document.getElementById("mode-wrap").hidden = !S.owner;
+  renderAll();
+}
+
+/* ============================== REVISIONES ============================== */
+const NEG = ["sin tos","no tos","ausencia de tos","sin desatur","sin cambio de voz","sin cambios de voz","sin aspira","no aspir","sin penetra"];
+const has = (t,w) => (t||"").toLowerCase().includes(w.toLowerCase());
+const negAbs = t => NEG.some(w=>has(t,w));
+const noObsVerb = v => ["realizará","mejorará","disminuirá"].includes((v||"").trim().toLowerCase());
+const noObsText = t => ["realizará","mejorará","disminuirá"].some(w=>has(" "+t," "+w));
+const infStart = t => { const w=(t||"").trim().split(/\s+/)[0]?.toLowerCase()||""; return /(ar|er|ir)$/.test(w); };
+const hasCritT = t => ["%","intentos","ensayos","oportunidades","cucharadas","repeticiones","tomas","sorbos","bolos"].some(w=>has(t,w));
+const brackets = t => /\[[^\]]*\]/.test(t||"");
+const MSG = {
+  neg:"Usa la ausencia de un signo como criterio (“sin tos”): castiga la tos protectora. Si la meta es la tos, redáctela como conducta (p. ej., “ejecutará una tos voluntaria eficaz”).",
+  noobs:"Verbo no observable en OE/OO (realizará, mejorará, disminuirá). Use un verbo de conducta.",
+  inf:"Empieza con un verbo en infinitivo: objetivo centrado en el terapeuta (Clase 2, diap. 30).",
+  esp:"Espesantes en lactante: en menores de 12 meses no son primera medida y requieren indicación del equipo y respaldo instrumental (Lab 1 y 2).",
+  milo:"“Contención milohioidea” no corresponde al apoyo mandibular (Lab 2).",
+  br:"Complete los datos entre corchetes [ ]: la plantilla no fija valores clínicos sin fuente."
+};
+function subjName(cs, suj){ return suj==="Cuidador" ? (cs.datos.cuidador||"El cuidador") : (cs.nombre.split("·")[0].trim()||"El usuario"); }
+function textFlags(cs, t, out){
+  if(negAbs(t)) out.push(["warn",MSG.neg]);
+  if(isLact(cs) && has(t,"espes")) out.push(["warn",MSG.esp]);
+  if(has(t,"milohioid")) out.push(["warn",MSG.milo]);
+}
+function critText(o){
+  if(o.ct==="xy" && (o.v1!==""||o.v2!=="")){ const p=(+o.v2>0 && o.v1!=="")?` (${Math.round(+o.v1/+o.v2*100)} %)`:""; return `en ${o.v1||"[x]"} de ${o.v2||"[y]"} ${o.unidad||"[unidad]"}${p}`; }
+  if(o.ct==="pct" && o.v1!=="") return `en ≥ ${o.v1} % de ${o.unidad||"las oportunidades"}`;
+  if(o.ct==="libre") return o.libre||"";
+  return "";
+}
+function ogSentence(cs){
+  const o=cs.og; if(S.mode==="stu") return o.texto||"";
+  if(!o.verbo||!o.contenido) return "";
+  return `${subjName(cs,"Usuario")} ${o.verbo} ${o.contenido}${o.contexto?" "+o.contexto:""}${o.n?`, en el curso de ${o.n} ${o.unidad||"sesiones"}`:""}.`;
+}
+function oeSentence(cs, k){
+  const o=k.oe; if(S.mode==="stu") return o.texto||"";
+  if(!o.verbo||!o.habilidad) return "";
+  return `${subjName(cs,o.sujeto)} ${o.verbo} ${o.habilidad}${o.contexto?" "+o.contexto:""}${o.n?`, en el curso de ${o.n} ${o.unidad||"sesiones"}`:""}.`;
+}
+function ooSentence(cs, k, o){
+  if(S.mode==="stu") return o.texto||"";
+  if(!o.verbo||!o.conducta) return "";
+  const cr=critText(o);
+  return `${subjName(cs,k.oe.sujeto)} ${o.verbo} ${o.conducta}${o.condicion?", "+o.condicion:""}${cr?", "+cr:""}${o.n?`, durante ${o.n} ${o.unidadPlazo||"sesiones"}`:""}.`;
+}
+function ids(cs){ const out={}; let i=0; cs.contenidos.forEach(k=>{ if(k.objetivo){ i++; out[k.key]=i; } }); return out; }
+
+function checksCaso(cs){ const a=[];
+  if(!cs.nombre.trim()) a.push(["err","Ponga un nombre o alias al caso."]);
+  if(!cs.datos.ciclo) a.push(["err","Indique el ciclo vital: cambia contenidos y alertas (p. ej., lactantes)."]);
+  if(!cs.datos.condicion) a.push(["err","Describa la condición de base."]);
+  if(!cs.datos.curso) a.push(["warn","Indique si el cuadro es progresivo o no progresivo (orienta reactivación o mantención, diap. 26)."]);
+  return a; }
+function checksHip(cs){ const a=[], h=cs.hip, v=cs.via, instr=cs.eval.instr.estado==="Sí";
+  ETAPAS.forEach(([k,n])=>{ const e=cs.eval[k]; if(e.estado && e.estado!=="Sí" && !e.nota) a.push(["warn",`${n}: indique qué falta o qué sugiere.`]); });
+  if(!h.etio) a.push(["err","Falta la etiología."]); if(!h.loc) a.push(["err","Falta la localización o fase."]);
+  if(!h.sev) a.push(["err","Falta la severidad (o indique que se definirá tras el estudio instrumental)."]);
+  if(h.doss!=="" && !instr) a.push(["warn","La DOSS se asigna con estudio instrumental (Lab 1). Marque la evaluación instrumental como realizada o deje la DOSS en blanco."]);
+  if(h.doss!=="" && h.sev && DOSS_LBL[+h.doss-1] && h.sev!==DOSS_LBL[+h.doss-1]) a.push(["warn",`La severidad no coincide con DOSS ${h.doss} = ${DOSS_LBL[+h.doss-1]} (O'Neil et al., 1999).`]);
+  if(!h.fois) a.push(["err","Falta la FOIS."]); else if(isLact(cs)) a.push(["warn","La FOIS fue validada en adultos (Crary et al., 2005): úsela con cautela en lactantes (Lab 1)."]);
+  if(!h.seg) a.push(["err","Indique el estado de la seguridad."]); else if(h.seg==="Comprometida" && !instr) a.push(["warn","Sin estudio instrumental, considere “por confirmar instrumentalmente”. La ausencia de tos no descarta aspiración silente (Lab 1)."]);
+  if(!h.efi) a.push(["err","Indique el estado de la eficacia."]);
+  if(!h.cond) a.push(["err","Describa viscosidad y volumen en que aparece la alteración."]); else if(has(h.cond,"líquido") && !has(h.cond,"ml")) a.push(["warn","Precise el volumen: “no tolera líquidos” sin volumen es un error frecuente (Lab 1)."]);
+  if(!h.lim) a.push(["err","Falta la limitación en la actividad (CIF)."]); if(!h.par) a.push(["err","Falta la restricción en la participación (CIF)."]);
+  if(!v.via) a.push(["err","Indique la vía de alimentación sugerida."]);
+  const ent = /SNG|GTT/.test(v.via);
+  if(v.via.startsWith("Enteral") && h.seg!=="Comprometida") a.push(["warn","Vía enteral exclusiva sin seguridad comprometida: el NPO no es profilaxis de neumonía (Clase 2, diap. 48) y se pierde experiencia oral (Lab 1)."]);
+  ["jseg","jefi","jpro","jtem"].forEach((k,i)=>{ if(v.via && !v[k]) a.push(["err",`Falta justificar la vía por ${["seguridad","eficacia","pronóstico","temporalidad"][i]}.`]); });
+  if(/GTT/.test(v.via) && v.tsem!=="" && +v.tsem<4) a.push(["warn","GTT con necesidad enteral proyectada < 4–6 semanas: el Lab 1 la reserva para > 4–6 semanas."]);
+  if(/SNG/.test(v.via) && v.tsem!=="" && +v.tsem>6) a.push(["warn","SNG proyectada > 4–6 semanas: discutir gastrostomía con el equipo (Lab 1)."]);
+  if(ent && v.tsem==="") a.push(["warn","Indique el tiempo proyectado de vía enteral (orienta SNG vs. GTT)."]);
+  if(v.via && !v.reev) a.push(["warn","Planifique la reevaluación (Lab 1)."]);
+  if(ent && !cs.contenidos.some(k=>k.cid==="higiene")) a.push(["warn","Vía enteral sin contenido de higiene oral: toda vía enteral se acompaña de rehabilitación e higiene oral (Lab 1)."]);
+  [v.jseg,v.jefi].forEach(t=>{ if(isLact(cs) && has(t,"espes")) a.push(["warn",MSG.esp]); });
+  return a; }
+function checksHall(cs){ const a=[]; const sel=Object.keys(cs.hall);
+  if(!sel.length && !cs.hallOtros.length) a.push(["err","Marque al menos un hallazgo de la evaluación."]);
+  sel.forEach(id=>{ const f=cs.hall[id].fuente||""; const h=HMAP[id]; if(!h) return;
+    if(!f) a.push(["warn",`“${h.t}”: indique la fuente del hallazgo.`]);
+    if(h.dim==="Seg" && /EAT-10|Pedi-EAT/.test(f)) a.push(["warn",`“${h.t}”: EAT-10 / Pedi-EAT miden percepción, no fisiología; no sirven como evidencia de seguridad (Lab 1).`]); });
+  return a; }
+function checksMod(cs){ const a=[]; const ms=Object.entries(cs.modelos).filter(([,m])=>m.uso);
+  const bases=ms.filter(([,m])=>m.rol==="Base");
+  if(bases.length!==1) a.push(["err","Marque un único modelo de base."]);
+  if(!ms.some(([n,m])=>n==="Biopsicosocial"&&m.rol==="Base")) a.push(["warn","Se espera el biopsicosocial como modelo de base (diap. 7; Lab 2)."]);
+  if(!ms.some(([,m])=>m.rol==="Operativo")) a.push(["err","Falta al menos un modelo operativo."]);
+  ms.forEach(([n,m])=>{ if(!m.rol) a.push(["err",`${n}: indique si es base u operativo.`]); if(!m.just) a.push(["err",`${n}: falta la justificación para este caso.`]); });
+  if(cs.modelos["Biomédico"].uso) a.push(["warn","Biomédico: participación pasiva; justifique su compatibilidad con la atención centrada en la persona (diap. 7)."]);
+  const cr=Object.entries(cs.criterios).filter(([,c])=>c.uso);
+  if(!cr.length) a.push(["err","Declare al menos un criterio de jerarquización."]); else if(cr.length===1) a.push(["warn","Ningún criterio opera solo: combínelos (diap. 9)."]);
+  if(cs.criterios["Sintomatológico"].uso && !cs.criterios["Clínico-funcional"].uso) a.push(["warn","El sintomatológico es subcategoría del clínico-funcional (diap. 13): considere declarar ambos."]);
+  cr.forEach(([n,c])=>{ if(!c.orden) a.push(["err",`${n}: falta el orden.`]); if(!c.just) a.push(["err",`${n}: falta la justificación.`]); });
+  const ords=cr.map(([,c])=>c.orden).filter(Boolean); if(new Set(ords).size!==ords.length) a.push(["warn","Hay criterios con el mismo orden."]);
+  if(!cs.ejes.relev) a.push(["warn","Registre la meta del usuario o la familia (plan centrado en la persona, diap. 14)."]);
+  if(!cs.ejes.ctx) a.push(["warn","Registre las variables de contexto que dosifican o descartan contenidos."]);
+  return a; }
+function checksCont(cs){ const a=[];
+  if(!cs.contenidos.length) a.push(["err","Agregue contenidos priorizados."]);
+  const modOn = n => cs.modelos[n]?.uso;
+  cs.contenidos.forEach(k=>{
+    if(!k.hall.length) a.push(["err",`${k.name}: sin hallazgo que lo respalde (Lab 2, paso 3).`]);
+    const sug=String(C[k.cid]?.prio ?? DIMS[k.dim].prio);
+    if(k.prio!==sug && !k.crit) a.push(["warn",`${k.name}: prioridad distinta a la sugerida; declare el criterio.`]);
+    if(k.crit && !cs.criterios[k.crit]?.uso) a.push(["warn",`${k.name}: el criterio “${k.crit}” no está declarado en el paso 4.`]);
+    if(k.tipo==="Compensatorio" && !modOn("Compensatorio")) a.push(["warn",`${k.name}: estrategia compensatoria sin modelo compensatorio declarado.`]);
+    if(k.tipo==="Rehabilitador" && !modOn("Rehabilitador")) a.push(["warn",`${k.name}: estrategia rehabilitadora sin modelo rehabilitador declarado.`]);
+  });
+  if(cs.contenidos.length && !cs.contenidos.some(k=>k.dim==="Con")) a.push(["warn","Ningún contenido aborda Confortabilidad o participación (CIF, diap. 15)."]);
+  if(!cs.enfoque) a.push(["err","Indique el enfoque (directo, indirecto o mixto) y por qué."]);
+  if(!cs.modalidad) a.push(["err","Indique la modalidad."]);
+  return a; }
+function checksOG(cs){ const a=[], o=cs.og;
+  if(S.mode==="stu"){ const t=o.texto; if(!t) return [["err","Escriba el objetivo general."]];
+    if(!has(t,subjName(cs,"Usuario"))) a.push(["err","No aparece el sujeto (nombre del usuario)."]);
+    if(!/(sesi|semana|día|dia|mes)/i.test(t)) a.push(["err","Falta el plazo."]);
+    if(infStart(t)) a.push(["warn",MSG.inf]); textFlags(cs,t,a); a.push(["warn","Verifique el contexto real (¿en dónde?)."]); return a; }
+  if(!o.verbo) a.push(["err","Falta el verbo."]); if(!o.contenido) a.push(["err","Falta el contenido o función."]);
+  if(!o.contexto) a.push(["err","Falta el contexto real."]); if(!o.n) a.push(["err","Falta el plazo."]);
+  if(cs.datos.curso==="Progresivo" && ["desarrollará","incrementará","eliminará","logrará"].includes(o.verbo)) a.push(["warn","Cuadro progresivo: considere mantención (mantendrá / prevendrá), diap. 31."]);
+  if(brackets(o.contexto)) a.push(["warn",MSG.br]);
+  return a; }
+function checksOE(cs,k){ const a=[], o=k.oe, t=oeSentence(cs,k);
+  if(S.mode==="stu"){ if(!o.texto) return [["err","Escriba el objetivo específico."]];
+    if(!has(t,subjName(cs,o.sujeto)) && !has(t,"cuidador")) a.push(["err","No aparece el sujeto."]);
+    if(o.verboUsado && !has(t,o.verboUsado)) a.push(["err","El verbo indicado no aparece en el texto."]);
+    if(!has(t,"sesi") || !o.n) a.push(["err","Falta el n.º de sesiones (en el texto y en el campo)."]);
+    if(hasCritT(t)) a.push(["err","El OE incluye criterio de logro: va en el OO."]);
+    if(infStart(t)) a.push(["warn",MSG.inf]); if(noObsText(t)) a.push(["warn",MSG.noobs]); textFlags(cs,t,a); return a; }
+  if(!o.verbo) a.push(["err","Falta el verbo."]); if(!o.habilidad) a.push(["err","Falta la habilidad."]); if(!o.n) a.push(["err","Falta el n.º de sesiones."]);
+  if(hasCritT(o.habilidad+" "+o.contexto)) a.push(["err","El OE incluye criterio de logro: va en el OO."]);
+  if(noObsVerb(o.verbo)) a.push(["warn",MSG.noobs]);
+  if(brackets(o.habilidad+o.contexto)) a.push(["warn",MSG.br]);
+  textFlags(cs,o.habilidad+" "+o.contexto,a);
+  if(o.sujeto==="Usuario" && has(o.habilidad,"cuidador")) a.push(["warn","Si el logro depende del cuidador, el sujeto debe ser el cuidador (diap. 30)."]);
+  return a; }
+function checksOO(cs,k,o){ const a=[], t=ooSentence(cs,k,o);
+  if(S.mode==="stu"){ if(!o.texto) return [["err","Escriba el objetivo operacional."]];
+    if(!o.nivel) a.push(["err","Indique el nivel de Simpson."]);
+    if(!has(t,subjName(cs,k.oe.sujeto)) && !has(t,"cuidador")) a.push(["err","No aparece el sujeto."]);
+    if(o.verboUsado && !has(t,o.verboUsado)) a.push(["err","El verbo indicado no aparece en el texto."]);
+    if(!hasCritT(t)) a.push(["err","Falta el criterio de logro (M)."]); else if(!has(t,"%")) a.push(["warn","Agregue el criterio en % (Lab 2)."]);
+    if(!has(t,"sesi") || !o.n) a.push(["err","Falta el n.º de sesiones (en el texto y en el campo)."]);
+    if(infStart(t)) a.push(["warn",MSG.inf]); if(noObsText(t)) a.push(["warn",MSG.noobs]);
+  } else {
+    if(!o.verbo) a.push(["err","Falta el verbo."]); if(!o.conducta) a.push(["err","Falta la conducta observable."]);
+    if(!critText(o) && !hasCritT(o.conducta)) a.push(["err","Falta el criterio de logro (M)."]);
+    if(o.ct==="xy" && o.v1!=="" && o.v2!=="" && +o.v1>+o.v2) a.push(["err","El primer valor del criterio es mayor que el segundo."]);
+    if(!o.n) a.push(["err","Falta el n.º de sesiones (T)."]);
+    if(noObsVerb(o.verbo)) a.push(["warn",MSG.noobs]);
+    if(brackets(o.conducta+o.condicion+o.unidad)) a.push(["warn",MSG.br]);
+    if(o.ct==="pct" && o.v1!=="" && +o.v1<70) a.push(["warn","Criterio < 70 %: verifique que sea suficiente."]);
+  }
+  if(o.n && k.oe.n && /sesi/.test(o.unidadPlazo||"sesiones") && +o.n>+k.oe.n) a.push(["err","El plazo del OO supera al de su OE."]);
+  if(o.A==="No"||o.R==="No") a.push(["err","Marcado como no alcanzable o no relevante."]);
+  if(!o.A||!o.R) a.push(["warn","Marque A (alcanzable) y R (relevante): es juicio clínico."]);
+  textFlags(cs,(S.mode==="stu"?o.texto:o.conducta+" "+o.condicion+" "+o.libre),a);
+  return a; }
+function checksObj(cs){ let a=[...checksOG(cs)]; cs.contenidos.filter(k=>k.objetivo).forEach(k=>{ a=a.concat(checksOE(cs,k)); k.oos.forEach(o=>a=a.concat(checksOO(cs,k,o))); }); if(!cs.contenidos.some(k=>k.objetivo)) a.push(["err","Ningún contenido tiene objetivo."]); return a; }
+const CHECKS = {caso:checksCaso,hip:checksHip,hall:checksHall,mod:checksMod,cont:checksCont,obj:checksObj,plan:()=>[]};
+
+/* ============================== RENDER ============================== */
+const $ = s => document.querySelector(s);
+function alertsHTML(list, okMsg){
+  if(!list.length) return `<ul class="alerts"><li class="ok"><span>${esc(okMsg||"Sin observaciones en este paso.")}</span></li></ul>`;
+  const seen=new Set(); const uniq=list.filter(([l,m])=>{ const k=l+m; if(seen.has(k)) return false; seen.add(k); return true; });
+  return `<ul class="alerts">${uniq.map(([l,m])=>`<li class="${l}"><span>${esc(m)}</span></li>`).join("")}</ul>`;
+}
+function renderPill(){ const p=$("#store-pill"); p.className="pill"+(S.store==="cloud"?" cloud":""); p.textContent = S.store==="cloud" ? "Guardado en tu cuenta" : "Guardado en este navegador"; }
+function renderSide(){
+  $("#cases").innerHTML = S.cases.map(c=>`<button class="case-btn" type="button" data-case="${c.id}" aria-current="${c.id===S.cur}"><b>${esc(c.nombre)}</b><span>${esc([c.datos.edad,c.datos.condicion].filter(Boolean).join(" · ").slice(0,48)||"Sin datos")}</span></button>`).join("") || `<span class="meta">Aún no hay casos.</span>`;
+  const cs=cur();
+  $("#steps").innerHTML = STEPS.map(s=>{ let dot="";
+    if(cs && s.id!=="plan"){ const l=CHECKS[s.id](cs); const e=l.filter(x=>x[0]==="err").length, w=l.filter(x=>x[0]==="warn").length;
+      dot = e?`<span class="dot err" title="${e} faltantes">${e}</span>`: w?`<span class="dot warn" title="${w} por revisar">${w}</span>`:`<span class="dot ok">✓</span>`; }
+    return `<button class="step-btn" type="button" data-step="${s.id}" ${s.id===S.step?'aria-current="step"':""}><span class="n">${s.n}</span><span>${s.t}</span>${dot}</button>`; }).join("");
+  $("#m-doc").setAttribute("aria-pressed", S.mode==="doc"); $("#m-stu").setAttribute("aria-pressed", S.mode==="stu");
+  renderPill();
+}
+function opts(list, val, ph){ return `<option value="">${esc(ph||"Seleccione")}</option>`+list.map(o=>`<option ${o===val?"selected":""}>${esc(o)}</option>`).join(""); }
+function dl(id, list){ return `<datalist id="${id}">${list.map(v=>`<option value="${esc(v)}"></option>`).join("")}</datalist>`; }
+function inp(path, val, attrs=""){ return `<input data-bind="${path}" value="${esc(val)}" ${attrs}>`; }
+function ta(path, val, attrs=""){ return `<textarea data-bind="${path}" ${attrs}>${esc(val)}</textarea>`; }
+function sel(path, list, val, ph){ return `<select data-bind="${path}" data-full="1">${opts(list,val,ph)}</select>`; }
+function head(step, title, lede){
+  const cs=cur(); const st=STEPS.find(s=>s.id===step);
+  return `<header class="top"><div><div class="eyebrow">Paso ${st.n} · ${esc(st.lab)}</div><h2>${esc(title)}</h2>${lede?`<p class="lede">${lede}</p>`:""}</div>
+  <div class="row">${cs.ejemplo?'<span class="tag-ej">Ejemplo</span>':""}${S.mode==="stu"?'<span class="pill">Vista estudiante: sin sugerencias</span>':""}</div></header>`;
+}
+function navFoot(){ const i=STEPS.findIndex(s=>s.id===S.step);
+  return `<div class="nav-foot">${i>0?`<button class="btn ghost" type="button" data-step="${STEPS[i-1].id}">← ${STEPS[i-1].t}</button>`:"<span></span>"}${i<STEPS.length-1?`<button class="btn" type="button" data-step="${STEPS[i+1].id}">${STEPS[i+1].t} →</button>`:""}</div>`; }
+function stepAlerts(){ return `<section class="panel"><h3>Revisión del paso</h3><div data-live="alerts"></div></section>`; }
+
+function vCaso(cs){
+  const d=cs.datos;
+  return head("caso","Datos del caso","El nombre o alias se usa como sujeto de los objetivos. Use casos de clase o alias; no ingrese datos identificables.")+
+  `<div class="grid cols-2">
+    <section class="panel"><h3>Usuario</h3>
+      <div class="field"><label for="f-nom">Nombre o alias</label>${inp("nombre",cs.nombre,'id="f-nom"')}</div>
+      <div class="grid cols-2"><div class="field"><label for="f-edad">Edad</label>${inp("datos.edad",d.edad,'id="f-edad"')}</div>
+      <div class="field"><label for="f-ciclo">Ciclo vital</label><select id="f-ciclo" data-bind="datos.ciclo" data-full="1">${opts(CICLOS,d.ciclo)}</select></div></div>
+      <div class="field"><label for="f-cond">Condición de base</label>${inp("datos.condicion",d.condicion,'id="f-cond"')}</div>
+      <div class="grid cols-2"><div class="field"><label for="f-curso">Curso</label><select id="f-curso" data-bind="datos.curso" data-full="1">${opts(["No progresivo","Progresivo"],d.curso)}</select></div>
+      <div class="field"><label for="f-esc">Escenario</label><select id="f-esc" data-bind="datos.escenario" data-full="1">${opts(["Agudo","Subagudo","Crónico","Comunitario"],d.escenario)}</select></div></div>
+      <div class="field"><label for="f-via">Vía de alimentación actual</label>${inp("datos.viaActual",d.viaActual,'id="f-via"')}</div>
+      <div class="field"><label for="f-cui">Cuidador/a <span class="src">si será sujeto de algún objetivo</span></label>${inp("datos.cuidador",d.cuidador,'id="f-cui" placeholder="p. ej., La madre de Ana"')}</div>
+    </section>
+    <div class="grid" style="align-content:start">${stepAlerts()}
+      <section class="panel"><h3>Casos</h3><p class="hint">Exporte un caso para respaldarlo o compartirlo, e impórtelo en otro equipo.</p>
+        <div class="row"><button class="btn ghost small" type="button" data-act="export">Exportar caso (.json)</button><button class="btn ghost small" type="button" data-act="import">Importar caso</button><button class="btn ghost small" type="button" data-act="dup">Duplicar</button>
+        ${S.confirmDel?`<span class="confirm">¿Eliminar este caso? <button class="btn danger small" type="button" data-act="del-yes">Eliminar</button><button class="btn ghost small" type="button" data-act="del-no">Cancelar</button></span>`:`<button class="btn danger small" type="button" data-act="del">Eliminar caso</button>`}</div>
+      </section></div>
+  </div>`;
+}
+function vHip(cs){
+  const h=cs.hip, v=cs.via;
+  return head("hip","Evaluación, hipótesis y vía","Complete la evaluación, formule la hipótesis con la estructura del Lab 1 y justifique la vía por seguridad, eficacia, pronóstico y temporalidad.")+
+  `<div class="grid cols-2">
+  <section class="panel"><h3>¿Qué falta en la evaluación?</h3>
+    ${ETAPAS.map(([k,n,dsc])=>`<div class="grid" style="grid-template-columns:minmax(0,1fr) 120px;gap:8px;align-items:start"><div class="field"><span class="lab">${n}</span><span class="src">${dsc}</span>${inp(`eval.${k}.nota`,cs.eval[k].nota,'placeholder="Qué falta o qué sugiere"')}</div>
+      <div class="field"><span class="lab">&nbsp;</span>${sel(`eval.${k}.estado`,["Sí","No","Pendiente"],cs.eval[k].estado,"¿Realizada?")}</div></div>`).join("")}
+  </section>
+  <section class="panel"><h3>Hipótesis diagnóstica</h3>
+    <div class="grid cols-3">
+      <div class="field"><label>Etiología</label>${inp("hip.etio",h.etio,'list="dl-etio"')}</div>
+      <div class="field"><label>Localización / fase</label>${inp("hip.loc",h.loc,'list="dl-loc"')}</div>
+      <div class="field"><label>Severidad</label>${sel("hip.sev",SEVS,h.sev)}</div>
+      <div class="field"><label>DOSS <span class="src">1–7</span></label>${inp("hip.doss",h.doss,'type="number" min="1" max="7"')}</div>
+      <div class="field"><label>FOIS <span class="src">1–7</span></label>${inp("hip.fois",h.fois,'type="number" min="1" max="7"')}</div>
+      <div class="field"><label>Seguridad</label>${sel("hip.seg",["Conservada","Conservada con modificaciones de viscosidad/volumen","Comprometida","Por confirmar instrumentalmente"],h.seg)}</div>
+    </div>
+    <div class="grid cols-2"><div class="field"><label>Eficacia</label>${sel("hip.efi",["Conservada","Levemente disminuida","Comprometida"],h.efi)}</div>
+    <div class="field"><label>Condiciones (viscosidad y volumen)</label>${inp("hip.cond",h.cond)}</div></div>
+    <div class="grid cols-2"><div class="field"><label>Limitación en la actividad</label>${inp("hip.lim",h.lim,'placeholder="p. ej., moderada, con impacto nutricional"')}</div>
+    <div class="field"><label>Restricción en la participación</label>${inp("hip.par",h.par,'placeholder="p. ej., en comidas familiares"')}</div></div>
+    <div class="sentence" data-live="hyp"></div>
+    ${dl("dl-etio",["neurogénica","neurogénica (de origen neuromotor)","estructural","iatrogénica"])}${dl("dl-loc",["oral","orofaríngea","faríngea","orofaríngea (predominio de fase oral)"])}
+  </section>
+  <section class="panel"><h3>Vía de alimentación sugerida</h3>
+    <div class="grid cols-2"><div class="field"><label>Vía</label>${sel("via.via",VIAS,v.via)}</div>
+    <div class="field"><label>Tiempo proyectado de vía enteral <span class="src">semanas</span></label>${inp("via.tsem",v.tsem,'type="number" min="0"')}</div></div>
+    ${[["jseg","Seguridad"],["jefi","Eficacia"],["jpro","Pronóstico"],["jtem","Temporalidad"],["reev","Reevaluación planificada"]].map(([k,n])=>`<div class="field"><label>${n}</label>${ta("via."+k,v[k],'rows="2" style="min-height:52px"')}</div>`).join("")}
+  </section>
+  ${stepAlerts()}</div>`;
+}
+function hypText(cs){ const h=cs.hip; if(!h.etio||!h.loc) return "";
+  return `Disfagia ${h.etio} ${h.loc}${h.sev?" "+h.sev:""} (${h.doss!==""?"DOSS "+h.doss:"DOSS por confirmar con estudio instrumental"})${h.fois?", FOIS "+h.fois:""}.${h.lim?" Limitación en la actividad de alimentarse por vía oral "+h.lim+".":""}${h.par?" Restricción en la participación "+h.par+".":""}`; }
+function vHall(cs){
+  const lact=isLact(cs);
+  return head("hall","Hallazgos de la evaluación", S.mode==="doc"?"Marque lo observado y su fuente. Cada hallazgo propone contenidos en el paso 5: la sugerencia se acepta, edita o descarta.":"Marque lo observado y su fuente. En el paso 5 usted decidirá qué contenido nace de cada hallazgo.")+
+  `<div class="grid cols-2">${DIM_KEYS.map(dk=>`<section class="panel"><div class="dim-head"><span class="chip d-${dk}">${dk==="Con"?"C":dk[0]}</span>${DIMS[dk].name}<span class="meta" style="font-weight:400">${DIMS[dk].q}</span></div>
+    <div class="dim-group">${H.filter(h=>h.dim===dk && (!h.lact||lact)).map(h=>{ const on=!!cs.hall[h.id];
+      return `<label class="check"><input type="checkbox" data-hall="${h.id}" ${on?"checked":""}><div><div class="t">${esc(h.t)}</div><div class="s">${esc(h.src)}</div></div>
+      ${on?`<div class="more"><select data-bind="hall.${h.id}.fuente" data-full="1" aria-label="Fuente">${opts(FUENTES,cs.hall[h.id].fuente,"Fuente del hallazgo")}</select>${inp(`hall.${h.id}.nota`,cs.hall[h.id].nota||"",'placeholder="Detalle (consistencia, volumen…)" aria-label="Detalle"')}</div>`:""}</label>`; }).join("")}</div></section>`).join("")}
+  <section class="panel"><h3>Otros hallazgos</h3><p class="hint">Lo que no esté en la lista. Quedan disponibles para respaldar contenidos.</p>
+    ${cs.hallOtros.map((o,i)=>`<div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,150px) auto;gap:8px">${inp(`hallOtros.${i}.t`,o.t,'placeholder="Hallazgo"')}${sel(`hallOtros.${i}.dim`,DIM_KEYS.map(k=>DIMS[k].name),DIMS[o.dim]?.name||"","Dimensión")}<button class="btn ghost small" type="button" data-act="del-otro" data-i="${i}">Quitar</button></div>`).join("")}
+    <div><button class="btn ghost small" type="button" data-act="add-otro">+ Agregar hallazgo</button></div></section>
+  ${stepAlerts()}</div>`;
+}
+function vMod(cs){
+  const sugReh = cs.contenidos.some(k=>k.tipo==="Rehabilitador"), sugComp = cs.contenidos.some(k=>k.tipo==="Compensatorio");
+  return head("mod","Modelos y criterios de jerarquización","Elija un modelo de base y los operativos, y los criterios que ordenan los contenidos. Justifique cada uno para este caso (Clase 2, diap. 5–15).")+
+  `<section class="panel"><h3>Modelos de intervención</h3>${S.mode==="doc"?`<p class="hint">Sugerencia según los contenidos: biopsicosocial de base${sugReh?" + rehabilitador":""}${sugComp?" + compensatorio":""}${sugReh&&sugComp?" (híbrido en la ejecución)":""}. Directo/indirecto es un enfoque, no un modelo.</p>`:`<p class="hint">Directo/indirecto/mixto es un enfoque (paso 5), no un modelo.</p>`}
+   <div class="toggle-cards">${MODELOS.map(m=>{ const s=cs.modelos[m.n]; return `<div class="tcard ${s.uso?"on":""}"><label class="tt"><input type="checkbox" data-bind="modelos.${m.n}.uso" data-full="1" ${s.uso?"checked":""}>${esc(m.n)}</label><p>${esc(m.d)} <em>${esc(m.p)}</em></p>
+     ${s.uso?`${sel(`modelos.${m.n}.rol`,["Base","Operativo"],s.rol,"Rol")}${ta(`modelos.${m.n}.just`,s.just,'rows="2" style="min-height:52px" placeholder="Justificación para este caso"')}`:""}</div>`; }).join("")}</div></section>
+  <section class="panel"><h3>Criterios de jerarquización</h3><p class="hint">Ninguno opera solo: combínelos y ordénelos (diap. 9).</p>
+   <div class="toggle-cards">${CRITERIOS.map(c=>{ const s=cs.criterios[c.n]; return `<div class="tcard ${s.uso?"on":""}"><label class="tt"><input type="checkbox" data-bind="criterios.${c.n}.uso" data-full="1" ${s.uso?"checked":""}>${esc(c.n)}</label><p>${esc(c.d)}</p>
+     ${s.uso?`<div class="grid" style="grid-template-columns:80px minmax(0,1fr);gap:8px">${inp(`criterios.${c.n}.orden`,s.orden,'type="number" min="1" placeholder="Orden" aria-label="Orden"')}${inp(`criterios.${c.n}.just`,s.just,'placeholder="Justificación" aria-label="Justificación"')}</div>`:""}</div>`; }).join("")}</div></section>
+  <section class="panel"><h3>Necesidades del usuario y CIF</h3><p class="hint">Diap. 14 y 15: funcionalidad, relevancia, contexto y participación.</p>
+   <div class="grid cols-2">${[["func","Funcionalidad","Qué ganancia funcional prioriza el plan"],["relev","Relevancia para el usuario y la familia","Meta personal (p. ej., volver a comer en familia)"],["ctx","Variables de contexto","Tiempo clínico, frecuencia, apoyos; qué se dosifica o descarta"],["cif","CIF: actividad y participación","Cómo el plan llega más allá de la función corporal"]].map(([k,n,p])=>`<div class="field"><label>${n}</label>${ta("ejes."+k,cs.ejes[k],`rows="2" style="min-height:52px" placeholder="${p}"`)}</div>`).join("")}</div></section>
+  ${stepAlerts()}`;
+}
+function suggestions(cs){
+  const have=new Set(cs.contenidos.map(k=>k.cid)); const map={};
+  Object.keys(cs.hall).forEach(hid=>{ const h=HMAP[hid]; if(!h) return; h.c.forEach(cid=>{ if(have.has(cid)) return; (map[cid]=map[cid]||[]).push(hid); }); });
+  return Object.entries(map);
+}
+function hchip(i,h,on){ return `<label class="row" style="gap:6px;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;${on?"background:var(--accent-soft);border-color:var(--accent)":""}"><input type="checkbox" data-hlink="${i}" value="${h.id}" ${on?"checked":""}>${esc(h.t.length>52?h.t.slice(0,50)+"…":h.t)}</label>`; }
+function vCont(cs){
+  const sug = S.mode==="doc" ? suggestions(cs) : [];
+  const allH = [...Object.keys(cs.hall).map(id=>({id,t:HMAP[id]?.t||id})), ...cs.hallOtros.map((o,i)=>({id:"o"+i,t:o.t||"(sin texto)"}))];
+  const sorted=[...cs.contenidos].map((k,i)=>({k,i}));
+  return head("cont","Contenidos priorizados", S.mode==="doc"?"Los hallazgos proponen contenidos con prioridad y criterio sugeridos. Acepte, ajuste la prioridad final y decida cuáles llevan objetivo propio.":"Agregue cada contenido, vincúlelo a su hallazgo, fije la prioridad y el criterio.")+
+  (sug.length?`<section class="panel"><h3>Sugeridos por los hallazgos</h3><div class="grid" style="gap:8px">${sug.map(([cid,hs])=>{ const t=C[cid]; return `<div class="row" style="justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:10px 12px"><div><span class="chip d-${t.dim}">${DIMS[t.dim].name}</span> <b>${esc(t.name)}</b><div class="meta">Desde: ${esc(hs.map(h=>HMAP[h].t).join("; "))}</div></div><button class="btn small" type="button" data-act="accept" data-cid="${cid}" data-h="${hs.join(",")}">Agregar</button></div>`; }).join("")}
+   <div><button class="btn ghost small" type="button" data-act="accept-all">Agregar todos</button></div></div></section>`:"")+
+  `<div class="grid" style="margin-top:16px">${sorted.map(({k,i})=>{ const sugP=String(C[k.cid]?.prio ?? DIMS[k.dim].prio);
+    return `<article class="content-card"><div class="stripe ${k.dim}"></div><div class="body">
+    <div class="cc-head"><div><span class="cc-title">${esc(k.name)}</span> <span class="chip d-${k.dim}">${DIMS[k.dim].name}</span></div>
+      <div class="row"><span class="prio">Prioridad ${esc(k.prio||"–")}</span><span class="meta">sugerida ${sugP}</span><button class="btn ghost small" type="button" data-act="up" data-i="${i}" aria-label="Subir">↑</button><button class="btn ghost small" type="button" data-act="down" data-i="${i}" aria-label="Bajar">↓</button><button class="btn danger small" type="button" data-act="del-cont" data-i="${i}">Quitar</button></div></div>
+    <div class="cc-grid">
+      <div class="field"><label>Prioridad final</label>${sel(`contenidos.${i}.prio`,["1","2","3","T"],k.prio)}</div>
+      <div class="field"><label>Criterio</label>${sel(`contenidos.${i}.crit`,CRITERIOS.map(c=>c.n),k.crit)}</div>
+      <div class="field"><label>Estrategia</label>${sel(`contenidos.${i}.tipo`,["Compensatorio","Rehabilitador","Ambos"],k.tipo)}</div>
+      <div class="field"><label>Objetivo propio</label>${sel(`contenidos.${i}.objetivo`,["Sí","No"],k.objetivo?"Sí":"No","")}</div>
+    </div>
+    <div class="field"><span class="lab">Hallazgos que lo respaldan</span><div class="row">${allH.filter(h=>k.hall.includes(h.id)).map(h=>hchip(i,h,true)).join("")||'<span class="meta">Ninguno vinculado.</span>'}</div>
+      ${allH.some(h=>!k.hall.includes(h.id))?`<details><summary class="meta" style="cursor:pointer">Vincular otro hallazgo</summary><div class="row" style="margin-top:6px">${allH.filter(h=>!k.hall.includes(h.id)).map(h=>hchip(i,h,false)).join("")}</div></details>`:""}</div>
+    </div></article>`; }).join("") || `<div class="empty">Aún no hay contenidos.${S.mode==="doc"?" Marque hallazgos en el paso 3 para recibir sugerencias.":""}</div>`}</div>
+  <section class="panel" style="margin-top:16px"><h3>Agregar contenido del catálogo SECC</h3>
+    <div class="row"><select id="pick-cont" aria-label="Contenido">${'<option value="">Elija un contenido</option>'+DIM_KEYS.map(dk=>`<optgroup label="${DIMS[dk].name}">${Object.entries(C).filter(([,t])=>t.dim===dk).map(([id,t])=>`<option value="${id}">${esc(t.name)}</option>`).join("")}</optgroup>`).join("")}</select><button class="btn small" type="button" data-act="add-cont">Agregar</button></div></section>
+  <section class="panel" style="margin-top:16px"><h3>Enfoque y modalidad</h3><div class="grid cols-2">
+    <div class="field"><label>Enfoque <span class="src">directo, indirecto o mixto · diap. 23</span></label>${ta("enfoque",cs.enfoque,'rows="2" style="min-height:52px"')}</div>
+    <div class="field"><label>Modalidad <span class="src">individual, grupal o mixta · diap. 24</span></label>${ta("modalidad",cs.modalidad,'rows="2" style="min-height:52px"')}</div></div></section>
+  <div style="margin-top:16px">${stepAlerts()}</div>`;
+}
+function vObj(cs){
+  const n=ids(cs); const stu=S.mode==="stu";
+  const ogPanel = `<section class="panel"><div class="obj-label"><span class="id">OG</span>Objetivo general</div>
+   ${stu?`<div class="field"><label>Escriba el OG <span class="src">sujeto + verbo en futuro + función (SECC) + contexto real + plazo</span></label>${ta("og.texto",cs.og.texto)}</div>`:
+   `<div class="grid cols-2"><div class="field"><label>Verbo</label>${inp("og.verbo",cs.og.verbo,'list="dl-ogv"')}</div><div class="field"><label>Contenido / función</label>${inp("og.contenido",cs.og.contenido,'list="dl-ogc"')}</div>
+   <div class="field"><label>Contexto real</label>${inp("og.contexto",cs.og.contexto,'placeholder="p. ej., en el contexto familiar"')}</div><div class="grid" style="grid-template-columns:90px 1fr;gap:8px"><div class="field"><label>Plazo</label>${inp("og.n",cs.og.n,'type="number" min="1"')}</div><div class="field"><label>Unidad</label>${sel("og.unidad",["sesiones","semanas"],cs.og.unidad,"")}</div></div></div>
+   <div class="sentence" data-live="og"></div>`}
+   <div data-live="a-og"></div></section>`;
+  const items = cs.contenidos.map((k,i)=>({k,i})).filter(x=>x.k.objetivo).sort((a,b)=>(+a.k.prio||9)-(+b.k.prio||9));
+  return head("obj","Objetivos", stu?"Escriba cada objetivo. La revisión verifica la estructura (sujeto, verbo, criterio, plazo), no el contenido clínico.":"Borradores generados desde los contenidos. Edite cada campo; la frase se arma sola. Los corchetes marcan datos que usted debe definir.")+
+  dl("dl-ogv",OG_VERBS)+dl("dl-ogc",["la seguridad, eficiencia, competencia y confortabilidad (SECC) de su alimentación oral","la seguridad de la deglución","la eficiencia de la deglución","la confortabilidad de la alimentación","habilidades sensoriomotoras orales que permitan una alimentación segura y eficiente"])+dl("dl-oev",OE_VERBS)+
+  Object.entries(SIMPSON).map(([k,v])=>dl("dl-s"+k,v.v)).join("")+
+  `<div class="grid">${ogPanel}
+  ${items.map(({k,i})=>{ const no=n[k.key]; const o=k.oe;
+   return `<article class="content-card"><div class="stripe ${k.dim}"></div><div class="body">
+   <div class="cc-head"><div><span class="cc-title">${esc(k.name)}</span> <span class="chip d-${k.dim}">${DIMS[k.dim].name}</span></div><span class="prio">Prioridad ${esc(k.prio)}</span></div>
+   <div class="obj"><div class="obj-label"><span class="id">OE ${no}</span>Objetivo específico ${!stu&&o.src?`<span class="src" style="text-transform:none;letter-spacing:0;font-weight:400">· ${esc(o.src)}</span>`:""}</div>
+    ${stu?`<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><div class="field"><label>Sujeto</label>${sel(`contenidos.${i}.oe.sujeto`,["Usuario","Cuidador"],o.sujeto,"")}</div><div class="field"><label>Verbo usado</label>${inp(`contenidos.${i}.oe.verboUsado`,o.verboUsado,'list="dl-oev"')}</div><div class="field"><label>Sesiones</label>${inp(`contenidos.${i}.oe.n`,o.n,'type="number" min="1"')}</div></div>
+      <div class="field"><label>Escriba el OE <span class="src">usuario + verbo observable + habilidad + contexto + n.º de sesiones (sin criterio)</span></label>${ta(`contenidos.${i}.oe.texto`,o.texto)}</div>`:
+    `<div class="oo-grid"><div class="field"><label>Sujeto</label>${sel(`contenidos.${i}.oe.sujeto`,["Usuario","Cuidador"],o.sujeto,"")}</div><div class="field"><label>Verbo</label>${inp(`contenidos.${i}.oe.verbo`,o.verbo,'list="dl-oev"')}</div>
+      <div class="field w3"><label>Habilidad (¿en qué?)</label>${inp(`contenidos.${i}.oe.habilidad`,o.habilidad)}</div><div class="field"><label>Sesiones</label>${inp(`contenidos.${i}.oe.n`,o.n,'type="number" min="1"')}</div>
+      <div class="field w6"><label>Contexto (¿en dónde?)</label>${inp(`contenidos.${i}.oe.contexto`,o.contexto)}</div></div>
+      <div class="sentence" data-live="oe:${i}"></div>`}
+    <div data-live="a-oe:${i}"></div></div>
+   ${k.oos.map((oo,j)=>`<div class="oo"><div class="row" style="justify-content:space-between"><div class="obj-label"><span class="id">OO ${no}.${j+1}</span>Operacional ${!stu&&oo.src?`<span class="src" style="text-transform:none;letter-spacing:0;font-weight:400">· ${esc(oo.src)}</span>`:""}</div><div class="row"><div class="smart" data-live="smart:${i}:${j}"></div><button class="btn danger small" type="button" data-act="del-oo" data-i="${i}" data-j="${j}">Quitar</button></div></div>
+     <div class="oo-grid">
+      <div class="field w2"><label>Nivel de Simpson</label><select data-bind="contenidos.${i}.oos.${j}.nivel" data-full="1">${'<option value="">Nivel</option>'+Object.entries(SIMPSON).map(([kk,v])=>`<option value="${kk}" ${oo.nivel===kk?"selected":""}>${kk==="F"?"":kk+". "}${v.n}</option>`).join("")}</select></div>
+      ${stu?`<div class="field w2"><label>Verbo usado</label>${inp(`contenidos.${i}.oos.${j}.verboUsado`,oo.verboUsado,`list="dl-s${oo.nivel||"F"}"`)}</div><div class="field"><label>Sesiones</label>${inp(`contenidos.${i}.oos.${j}.n`,oo.n,'type="number" min="1"')}</div>
+        <div class="field"><label>A · R</label><div class="row" style="gap:4px">${sel(`contenidos.${i}.oos.${j}.A`,["Sí","No"],oo.A,"A")}${sel(`contenidos.${i}.oos.${j}.R`,["Sí","No"],oo.R,"R")}</div></div>
+        <div class="field w6"><label>Escriba el OO <span class="src">usuario + verbo + condición/estrategia + criterio en % + n.º de sesiones</span></label>${ta(`contenidos.${i}.oos.${j}.texto`,oo.texto)}</div>`:
+      `<div class="field"><label>Verbo</label>${inp(`contenidos.${i}.oos.${j}.verbo`,oo.verbo,`list="dl-s${oo.nivel||"F"}"`)}</div>
+       <div class="field w3"><label>Conducta observable</label>${inp(`contenidos.${i}.oos.${j}.conducta`,oo.conducta)}</div>
+       <div class="field w3"><label>Condición / estrategia</label>${inp(`contenidos.${i}.oos.${j}.condicion`,oo.condicion)}</div>
+       <div class="field"><label>Criterio</label><select data-bind="contenidos.${i}.oos.${j}.ct" data-full="1">${[["xy","X de Y"],["pct","≥ %"],["libre","Libre"],["none","En la conducta"]].map(([v,l])=>`<option value="${v}" ${oo.ct===v?"selected":""}>${l}</option>`).join("")}</select></div>
+       ${oo.ct==="libre"?`<div class="field w2"><label>Criterio libre</label>${inp(`contenidos.${i}.oos.${j}.libre`,oo.libre)}</div>`:oo.ct==="none"?`<div class="field w2"><span class="lab">&nbsp;</span><span class="meta">El criterio está escrito en la conducta.</span></div>`:
+        `<div class="field"><label>${oo.ct==="pct"?"%":"X"}</label>${inp(`contenidos.${i}.oos.${j}.v1`,oo.v1,'type="number" min="0"')}</div>${oo.ct==="xy"?`<div class="field"><label>Y</label>${inp(`contenidos.${i}.oos.${j}.v2`,oo.v2,'type="number" min="1"')}</div>`:""}`}
+       <div class="field${oo.ct==="pct"?" w2":""}"><label>Unidad</label>${inp(`contenidos.${i}.oos.${j}.unidad`,oo.unidad,'placeholder="ensayos"')}</div>
+       <div class="field"><label>Sesiones</label>${inp(`contenidos.${i}.oos.${j}.n`,oo.n,'type="number" min="1"')}</div>
+       <div class="field"><label>Tipo de plazo</label>${sel(`contenidos.${i}.oos.${j}.unidadPlazo`,["sesiones","sesiones consecutivas"],oo.unidadPlazo,"")}</div>
+       <div class="field"><label>A · R</label><div class="row" style="gap:4px">${sel(`contenidos.${i}.oos.${j}.A`,["Sí","No"],oo.A,"A")}${sel(`contenidos.${i}.oos.${j}.R`,["Sí","No"],oo.R,"R")}</div></div>`}
+     </div>${stu?"":`<div class="sentence" data-live="oo:${i}:${j}"></div>`}<div data-live="a-oo:${i}:${j}"></div></div>`).join("")}
+   <div><button class="btn ghost small" type="button" data-act="add-oo" data-i="${i}">+ Objetivo operacional</button></div>
+   </div></article>`; }).join("") || `<div class="empty">No hay contenidos con objetivo propio. Defínalos en el paso 5.</div>`}
+  </div>`;
+}
+function planText(cs){
+  const n=ids(cs), L=[]; const h=hypText(cs);
+  L.push(`# Plan de intervención · ${cs.nombre}`,"");
+  L.push(`**Usuario:** ${[cs.datos.edad,cs.datos.ciclo,cs.datos.condicion].filter(Boolean).join(" · ")}`);
+  if(h) L.push(`**Hipótesis:** ${h}`);
+  if(cs.via.via) L.push(`**Vía sugerida:** ${cs.via.via}. ${[cs.via.jseg,cs.via.jefi,cs.via.jpro,cs.via.jtem].filter(Boolean).join(" ")}`);
+  L.push("","## Modelos y criterios");
+  Object.entries(cs.modelos).filter(([,m])=>m.uso).forEach(([k,m])=>L.push(`- ${k} (${m.rol||"sin rol"}): ${m.just}`));
+  Object.entries(cs.criterios).filter(([,c])=>c.uso).sort((a,b)=>(+a[1].orden||9)-(+b[1].orden||9)).forEach(([k,c])=>L.push(`- Criterio ${c.orden}. ${k}: ${c.just}`));
+  if(cs.enfoque) L.push(`- Enfoque: ${cs.enfoque}`); if(cs.modalidad) L.push(`- Modalidad: ${cs.modalidad}`);
+  L.push("","## Contenidos priorizados");
+  [...cs.contenidos].sort((a,b)=>(+a.prio||9)-(+b.prio||9)).forEach(k=>L.push(`- [${k.prio}] ${k.name} (${DIMS[k.dim].name}${k.crit?"; "+k.crit:""})${k.objetivo?"":" · sin objetivo propio"}`));
+  L.push("","## Objetivos", `**OG.** ${ogSentence(cs)||"(pendiente)"}`);
+  cs.contenidos.filter(k=>k.objetivo).sort((a,b)=>(+a.prio||9)-(+b.prio||9)).forEach(k=>{ L.push("",`**OE ${n[k.key]}.** ${oeSentence(cs,k)||"(pendiente)"}`); k.oos.forEach((o,j)=>L.push(`- OO ${n[k.key]}.${j+1}. ${ooSentence(cs,k,o)||"(pendiente)"}`)); });
+  return L.join("\n");
+}
+function vPlan(cs){
+  const n=ids(cs); const h=hypText(cs); let tot=0, err=0;
+  STEPS.forEach(s=>{ if(s.id!=="plan"){ const l=CHECKS[s.id](cs); tot+=l.length; err+=l.filter(x=>x[0]==="err").length; } });
+  const ks=[...cs.contenidos].sort((a,b)=>(+a.prio||9)-(+b.prio||9));
+  return head("plan","Plan de intervención", err?`Quedan ${err} datos faltantes y ${tot-err} puntos por revisar en los pasos anteriores.`:"Todos los pasos tienen sus componentes obligatorios.")+
+  `<div class="row" style="margin-bottom:14px"><button class="btn" type="button" data-act="copy">Copiar plan</button><button class="btn ghost" type="button" data-act="dl-md">Descargar (.md)</button><button class="btn ghost" type="button" data-act="export">Exportar caso (.json)</button></div>
+  <article class="plan">
+   <div><h4>Usuario</h4><h3>${esc(cs.nombre)}</h3><p class="meta">${esc([cs.datos.edad,cs.datos.ciclo,cs.datos.condicion,cs.datos.curso].filter(Boolean).join(" · "))}</p></div>
+   ${h?`<div><h4>Hipótesis diagnóstica</h4><p>${esc(h)}</p></div>`:""}
+   ${cs.via.via?`<div><h4>Vía de alimentación</h4><p><b>${esc(cs.via.via)}.</b> ${esc([cs.via.jseg,cs.via.jefi,cs.via.jpro,cs.via.jtem].filter(Boolean).join(" "))}</p></div>`:""}
+   <div class="grid cols-2"><div><h4>Modelos</h4><ul>${Object.entries(cs.modelos).filter(([,m])=>m.uso).map(([k,m])=>`<li><b>${esc(k)}</b> (${esc(m.rol)}). ${esc(m.just)}</li>`).join("")||"<li>—</li>"}</ul></div>
+   <div><h4>Criterios</h4><ol>${Object.entries(cs.criterios).filter(([,c])=>c.uso).sort((a,b)=>(+a[1].orden||9)-(+b[1].orden||9)).map(([k,c])=>`<li><b>${esc(k)}.</b> ${esc(c.just)}</li>`).join("")||"<li>—</li>"}</ol></div></div>
+   <div><h4>Contenidos priorizados</h4><ul>${ks.map(k=>`<li><span class="prio">${esc(k.prio)}</span> ${esc(k.name)} <span class="chip d-${k.dim}">${DIMS[k.dim].name}</span>${k.objetivo?"":' <span class="meta">sin objetivo propio</span>'}</li>`).join("")||"<li>—</li>"}</ul></div>
+   <div><h4>Enfoque y modalidad</h4><p>${esc(cs.enfoque||"—")}. ${esc(cs.modalidad||"")}</p></div>
+   <div><h4>Objetivos</h4><div class="grid" style="gap:14px">
+    <p class="sentence">${esc(ogSentence(cs)||"OG pendiente")}</p>
+    ${ks.filter(k=>k.objetivo).map(k=>`<div><p class="oe-line">OE ${n[k.key]}. ${esc(oeSentence(cs,k)||"(pendiente)")}</p><ul>${k.oos.map((o,j)=>`<li class="oo-line">OO ${n[k.key]}.${j+1}. ${esc(ooSentence(cs,k,o)||"(pendiente)")}</li>`).join("")}</ul></div>`).join("")}
+   </div></div>
+  </article>`;
+}
+function renderMain(){
+  const cs=cur(); const m=$("#main");
+  if(!cs){ m.innerHTML = `<div class="empty" style="margin-top:10vh"><h2 style="margin:0">Planificador SECC</h2><p class="lede" style="margin:0">Cree un caso para empezar: datos, hipótesis y vía (Lab 1), hallazgos, modelos y criterios, contenidos priorizados y objetivos OG → OE → OO (Lab 2).</p><div class="row"><button class="btn" type="button" data-act="new">Crear caso</button><button class="btn ghost" type="button" data-act="import">Importar caso</button></div></div>`; return; }
+  const v = {caso:vCaso,hip:vHip,hall:vHall,mod:vMod,cont:vCont,obj:vObj,plan:vPlan}[S.step](cs);
+  m.innerHTML = v + (S.step==="plan"?"":navFoot());
+  refreshLive();
+}
+function refreshLive(){
+  const cs=cur(); if(!cs) return;
+  document.querySelectorAll("[data-live]").forEach(el=>{
+    const [kind,a,b]=el.dataset.live.split(":");
+    let html="";
+    if(kind==="alerts"){ html=alertsHTML(CHECKS[S.step](cs)); }
+    else if(kind==="hyp"){ const t=hypText(cs); el.className="sentence"+(t?"":" empty"); el.textContent = t || "La hipótesis se redacta al completar etiología y localización."; return; }
+    else if(kind==="og"){ const t=ogSentence(cs); el.className="sentence"+(t?"":" empty"); el.innerHTML = t?esc(t).replace(/\[[^\]]*\]/g,s=>`<mark>${s}</mark>`):"Complete verbo y contenido."; return; }
+    else if(kind==="oe"){ const k=cs.contenidos[a]; const t=oeSentence(cs,k); el.className="sentence"+(t?"":" empty"); el.innerHTML = t?esc(t).replace(/\[[^\]]*\]/g,s=>`<mark>${s}</mark>`):"Complete verbo y habilidad."; return; }
+    else if(kind==="oo"){ const k=cs.contenidos[a]; const t=ooSentence(cs,k,k.oos[b]); el.className="sentence"+(t?"":" empty"); el.innerHTML = t?esc(t).replace(/\[[^\]]*\]/g,s=>`<mark>${s}</mark>`):"Complete verbo y conducta."; return; }
+    else if(kind==="a-og"){ html=alertsHTML(checksOG(cs),"OG completo."); }
+    else if(kind==="a-oe"){ html=alertsHTML(checksOE(cs,cs.contenidos[a]),"OE completo."); }
+    else if(kind==="a-oo"){ const k=cs.contenidos[a]; html=alertsHTML(checksOO(cs,k,k.oos[b]),"OO completo."); }
+    else if(kind==="smart"){ const k=cs.contenidos[a], o=k.oos[b]; const t=ooSentence(cs,k,o);
+      const sOK = S.mode==="stu" ? (!!o.texto && (!o.verboUsado||has(t,o.verboUsado))) : (!!o.verbo && !!o.conducta);
+      const mOK = S.mode==="stu" ? hasCritT(t) : !!(critText(o)||hasCritT(o.conducta));
+      const tOK = !!o.n; const f=(l,v)=>`<span class="${v===true?"y":v===false?"n":""}" title="${l}">${l}</span>`;
+      html = f("S",sOK)+f("M",mOK)+f("A",o.A==="Sí"?true:o.A==="No"?false:null)+f("R",o.R==="Sí"?true:o.R==="No"?false:null)+f("T",tOK); }
+    el.innerHTML = html;
+  });
+  renderSide();
+}
+function renderAll(){ renderSide(); renderMain(); }
+
+/* ============================== EVENTOS ============================== */
+function setPath(obj, path, val){ const ks=path.split("."); let o=obj; for(let i=0;i<ks.length-1;i++){ const k=ks[i]; if(o[k]===undefined) o[k]={}; o=o[k]; } o[ks[ks.length-1]]=val; }
+function onBind(el, full){
+  const cs=cur(); if(!cs) return; let path=el.dataset.bind, val = el.type==="checkbox" ? el.checked : el.value;
+  if(/^contenidos\.\d+\.objetivo$/.test(path)) val = (val==="Sí");
+  if(path.startsWith("hallOtros.") && path.endsWith(".dim")){ const map={Seguridad:"Seg",Eficiencia:"Efi",Competencia:"Com",Confortabilidad:"Con"}; val=map[val]||""; }
+  setPath(cs, path, val); touch();
+  if(full) renderMain(); else refreshLive();
+}
+document.addEventListener("input", e=>{ const el=e.target; if(el.dataset && el.dataset.bind && !el.dataset.full) onBind(el,false); });
+document.addEventListener("change", e=>{ const el=e.target; const cs=cur();
+  if(el.dataset.bind && el.dataset.full) return onBind(el,true);
+  if(el.dataset.hall){ const id=el.dataset.hall; if(el.checked) cs.hall[id]={fuente:"",nota:""}; else delete cs.hall[id]; touch(); renderMain(); return; }
+  if(el.dataset.hlink!==undefined){ const k=cs.contenidos[+el.dataset.hlink]; const v=el.value; k.hall = el.checked ? [...new Set([...k.hall,v])] : k.hall.filter(x=>x!==v); touch(); renderMain(); return; }
+  if(el.id==="import-file"){ const f=el.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const c=JSON.parse(r.result); if(!c||!c.datos||!Array.isArray(c.contenidos)) throw 0; c.id=uid8(); c.ejemplo=false; c.actualizado=Date.now(); S.cases.unshift(c); S.cur=c.id; dirty.add(c.id); flush(); S.step="caso"; renderAll(); toast("Caso importado."); }catch(_){ toast("El archivo no es un caso válido de este planificador."); } el.value=""; }; r.readAsText(f); }
+});
+document.addEventListener("click", async e=>{
+  const b=e.target.closest("button"); if(!b) return; const cs=cur();
+  if(b.dataset.case){ S.cur=b.dataset.case; S.confirmDel=false; renderAll(); return; }
+  if(b.dataset.step){ S.step=b.dataset.step; S.confirmDel=false; renderAll(); window.scrollTo({top:0}); return; }
+  if(b.id==="new-case"){ return newCase(); }
+  if(b.id==="m-doc"||b.id==="m-stu"){ S.mode = b.id==="m-doc"?"doc":"stu"; renderAll(); return; }
+  const act=b.dataset.act; if(!act) return;
+  if(act==="new") return newCase();
+  if(act==="import") return $("#import-file").click();
+  if(act==="export"){ await save(`${slug(cs.nombre)}.json`, JSON.stringify(cs,null,2)); return; }
+  if(act==="dl-md"){ await save(`Plan ${slug(cs.nombre)}.md`, planText(cs)); return; }
+  if(act==="copy"){ const t=planText(cs).replace(/\*\*/g,""); try{ await navigator.clipboard.writeText(t); toast("Plan copiado. Péguelo en su documento."); }catch(_){ toast("No se pudo copiar: use Descargar (.md)."); } return; }
+  if(act==="dup"){ const c=clone(cs); c.id=uid8(); c.nombre=cs.nombre+" (copia)"; c.ejemplo=false; c.actualizado=Date.now(); S.cases.unshift(c); S.cur=c.id; dirty.add(c.id); flush(); renderAll(); return; }
+  if(act==="del"){ S.confirmDel=true; renderMain(); return; }
+  if(act==="del-no"){ S.confirmDel=false; renderMain(); return; }
+  if(act==="del-yes"){ S.confirmDel=false; await removeCase(cs.id); S.step="caso"; renderAll(); toast("Caso eliminado."); return; }
+  if(act==="add-otro"){ cs.hallOtros.push({t:"",dim:""}); touch(); renderMain(); return; }
+  if(act==="del-otro"){ cs.hallOtros.splice(+b.dataset.i,1); touch(); renderMain(); return; }
+  if(act==="accept"){ cs.contenidos.push(newContenido(b.dataset.cid,cs,b.dataset.h.split(","))); sortCont(cs); touch(); renderMain(); return; }
+  if(act==="accept-all"){ suggestions(cs).forEach(([cid,hs])=>cs.contenidos.push(newContenido(cid,cs,hs))); sortCont(cs); touch(); renderMain(); return; }
+  if(act==="add-cont"){ const cid=$("#pick-cont").value; if(!cid) return toast("Elija un contenido de la lista."); cs.contenidos.push(newContenido(cid,cs,[])); touch(); renderMain(); return; }
+  if(act==="del-cont"){ cs.contenidos.splice(+b.dataset.i,1); touch(); renderMain(); return; }
+  if(act==="up"||act==="down"){ const i=+b.dataset.i, j=act==="up"?i-1:i+1; if(j<0||j>=cs.contenidos.length) return; [cs.contenidos[i],cs.contenidos[j]]=[cs.contenidos[j],cs.contenidos[i]]; touch(); renderMain(); return; }
+  if(act==="add-oo"){ cs.contenidos[+b.dataset.i].oos.push(newOO()); touch(); renderMain(); return; }
+  if(act==="del-oo"){ cs.contenidos[+b.dataset.i].oos.splice(+b.dataset.j,1); touch(); renderMain(); return; }
+});
+function sortCont(cs){ cs.contenidos.sort((a,b)=>(+a.prio||9)-(+b.prio||9)); }
+function newCase(){ const c=blankCase("Caso "+(S.cases.length+1)); S.cases.unshift(c); S.cur=c.id; S.step="caso"; dirty.add(c.id); flush(); renderAll(); setTimeout(()=>{ const f=$("#f-nom"); if(f){ f.focus(); f.select(); } },30); }
+const slug = s => (s||"caso").replace(/[^\p{L}\p{N} _-]/gu,"").trim().slice(0,60)||"caso";
+async function save(filename, data){
+  try{ const blob=new Blob([data],{type: filename.endsWith(".json")?"application/json":"text/markdown"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); toast("Archivo descargado."); }
+  catch(e){ toast("No se pudo descargar el archivo."); }
+}
+let tt=null; function toast(m){ let t=document.querySelector(".toast"); if(!t){ t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); document.body.appendChild(t); } t.textContent=m; clearTimeout(tt); tt=setTimeout(()=>t.remove(),3200); }
+window.addEventListener("beforeunload", ()=>{ if(dirty.size) saveLocal(); });
+
+init();
+</script>
+
+</body>
+</html>
